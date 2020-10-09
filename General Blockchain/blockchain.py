@@ -51,7 +51,7 @@ class Blockchain:
         block_index = 1
         while block_index < len(chain):
             block = chain[block_index]
-            if block['previou_hash'] != self.hash(previous_block):
+            if block['previous_hash'] != self.hash(previous_block):
                 return False
             previous_proof = previous_block['proof']
             proof = block['proof']
@@ -62,4 +62,50 @@ class Blockchain:
             block_index += 1
         return True
 
+
+
 # 2: Mining the Blockchain
+
+# Create the Web App
+app = Flask(__name__)
+app.config['JSONIFY_PRETTYPRINT_REGULAR'] = False
+
+# Create Blockchain
+blockchain = Blockchain()
+
+
+# Mining a new block
+@app.route('/mine_block', methods = ['GET'])
+def mine_block():
+    previous_block = blockchain.get_previous_block()
+    previous_proof = previous_block['proof']
+    proof = blockchain.proof_of_work(previous_proof)
+    previous_hash = blockchain.hash(previous_block)
+    block = blockchain.create_block(proof, previous_hash)
+    response = {'message': 'Congrats! You just mined a block!',
+                'index': block['index'],
+                'timestamp': block['timestamp'],
+                'proof': block['proof'],
+                'previous_hash': block['previous_hash']}
+    return jsonify(response), 200
+
+
+# Get full Blockchain
+@app.route('/get_chain', methods = ['GET'])
+def get_chain():
+    response = {'chain': blockchain.chain,
+                'length': len(blockchain.chain)}
+    return jsonify(response), 200
+
+# Check if chain is valid
+@app.route('/check_chain', methods = ['GET'])
+def check_chain():
+    is_valid = blockchain.is_chain_valid(blockchain.chain)
+    if is_valid:
+        response = {'message': 'All good. The blockchain is valid.'}
+    else:
+        response = {'message': 'The blockchain is not valid.'}
+    return jsonify(response), 200
+
+# Running the app
+app.run(host='0.0.0.0', port=5000) 
